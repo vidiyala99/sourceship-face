@@ -22,7 +22,7 @@ Set these in `.env.local` or on Render. The crew uses them as soon as they are p
 | --- | --- | --- |
 | `LINKUP_API_KEY` | Reed | Live web research. Names must appear in results — no invented people. |
 | `NEBIUS_API_KEY` or `NEBIUS_TOKEN` | Tess | OpenAI-compatible drafts + confidence score. |
-| `NEBIUS_BASE_URL` | Tess | Default `https://api.studio.nebius.com/v1` |
+| `NEBIUS_BASE_URL` | Tess | Default `https://api.tokenfactory.nebius.com/v1` |
 | `OPENAI_API_KEY` + `OPENAI_BASE_URL` | Tess | Alternate if Nebius is exposed as OpenAI-compat. |
 
 Without keys, Reed still fetches public event HTML and Tess writes template notes from those live entities. The header shows **LinkUp live / waiting** and **Nebius live / waiting**.

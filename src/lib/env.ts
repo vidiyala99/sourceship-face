@@ -43,7 +43,7 @@ export function resolveLlm(): {
       baseUrl: (
         process.env.NEBIUS_BASE_URL ||
         process.env.OPENAI_BASE_URL ||
-        "https://api.studio.nebius.com/v1"
+        "https://api.tokenfactory.nebius.com/v1"
       ).replace(/\/$/, ""),
       model:
         process.env.NEBIUS_MODEL ||

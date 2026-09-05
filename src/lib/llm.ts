@@ -42,7 +42,17 @@ async function completeOnce(prompt: string): Promise<string | null> {
       }),
       signal: AbortSignal.timeout(25000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const snippet = (await res.text())
+        .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 180);
+      console.error(
+        `[llm] chat completions failed: ${res.status} ${snippet}`,
+      );
+      return null;
+    }
     const data = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
     };

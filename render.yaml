@@ -16,7 +16,7 @@ services:
       - key: JOB_STORE_PATH
         value: /tmp/sourceship-jobs.json
       - key: NEBIUS_BASE_URL
-        value: https://api.studio.nebius.com/v1
+        value: https://api.tokenfactory.nebius.com/v1
       - key: NEBIUS_MODEL
         value: meta-llama/Meta-Llama-3.1-8B-Instruct-fast
       - key: LINKUP_API_KEY
