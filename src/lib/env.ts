@@ -1,3 +1,5 @@
+import { linkupConfigured } from "./linkup";
+
 export type SponsorStatus = {
   linkup: boolean;
   llm: boolean;
@@ -8,7 +10,7 @@ export type SponsorStatus = {
 export function sponsorStatus(): SponsorStatus {
   const llm = resolveLlm();
   return {
-    linkup: Boolean(process.env.LINKUP_API_KEY),
+    linkup: linkupConfigured(),
     llm: Boolean(llm),
     llmProvider: llm?.provider ?? null,
     storePath: process.env.JOB_STORE_PATH || "/tmp/sourceship-jobs.json",
