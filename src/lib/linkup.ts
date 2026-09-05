@@ -52,7 +52,7 @@ async function linkupOnce(
       sources?: { name?: string; title?: string; snippet?: string; url?: string }[];
     };
     const sources = (data.sources ?? []).map((s) => ({
-      title: s.name || s.title || "LinkUp source",
+      title: s.name || s.title || "Live source",
       url: s.url || "https://api.linkup.so/v1/search",
       snippet: s.snippet || "",
     }));

@@ -1,3 +1,4 @@
+import { ApproveDone } from "@/components/approve-done";
 import type { Job } from "@/lib/types";
 
 export function Outcome({ job }: { job: Job }) {
@@ -5,9 +6,26 @@ export function Outcome({ job }: { job: Job }) {
   if (!result) return null;
   const pending = result.shortlist.filter((item) => !item.approved).length;
   const approved = result.shortlist.length - pending;
+  const allApproved = result.shortlist.length > 0 && pending === 0;
+  const researchNote =
+    result.researchMode === "empty" ? "no live hits" : "using public pages";
+  const draftNote =
+    result.draftMode === "llm"
+      ? "notes drafted"
+      : "drafting from what we found";
 
   return (
     <section className="mt-10 overflow-hidden rounded-[1.6rem] bg-[#f4efe6] text-[#1c1712]">
+      {allApproved ? (
+        <div className="px-6 pt-6">
+          <ApproveDone
+            count={approved}
+            jobId={job.id}
+            tone="light"
+            showPackLink={false}
+          />
+        </div>
+      ) : null}
       <div className="flex flex-col gap-5 border-b border-[#1c1712]/10 px-6 py-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[11px] tracking-[0.22em] text-[#a85b2b] uppercase">
@@ -25,11 +43,12 @@ export function Outcome({ job }: { job: Job }) {
             <p className="text-[10px] tracking-[0.16em] text-[#8a8176] uppercase">
               Confidence
             </p>
-            <p className="font-serif text-3xl">{result.overallConfidence}</p>
+            <p className="font-serif text-3xl">{result.overallConfidence}%</p>
           </div>
           <form action="/api/jobs/form/approve" method="post">
             <input type="hidden" name="jobId" value={job.id} />
             <input type="hidden" name="all" value="1" />
+            <input type="hidden" name="count" value={result.shortlist.length} />
             <button
               type="submit"
               disabled={pending === 0}
@@ -41,7 +60,8 @@ export function Outcome({ job }: { job: Job }) {
         </div>
       </div>
       <p className="px-6 pt-4 text-xs text-[#8a8176]">
-          {approved}/{result.shortlist.length} approved · {result.researchMode === "linkup" ? "LinkUp research" : result.researchMode === "pages" ? "live pages" : "no live hits"} · {result.draftMode === "llm" ? "LLM notes" : "template notes"} · nothing is emailed
+        {approved}/{result.shortlist.length} approved · {researchNote} ·{" "}
+        {draftNote} · nothing is emailed
       </p>
       <div className="grid gap-4 p-6 md:grid-cols-2">
         {result.shortlist.map((item) => (
@@ -61,7 +81,9 @@ export function Outcome({ job }: { job: Job }) {
                 </p>
               </div>
               <span className="rounded-full bg-[#1c1712]/5 px-2 py-0.5 text-[11px]">
-                {item.approved ? "Approved" : `c${item.confidence}`}
+                {item.approved
+                  ? "Approved"
+                  : `${item.confidence}% confidence`}
               </span>
             </div>
             <div className="mt-3 rounded-xl bg-[#f4efe6] p-3">

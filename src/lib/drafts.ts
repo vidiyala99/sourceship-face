@@ -178,9 +178,12 @@ function summaryFor(
 ): string {
   const names = items.map((i) => i.name).join(", ") || "nobody grounded yet";
   const via = research.usedLinkup
-    ? "LinkUp + public pages"
+    ? "live research and public pages"
     : "public event pages";
-  const drafts = draftMode === "llm" ? `Notes via ${llmProvider()}.` : "Template notes from live entities.";
+  const drafts =
+    draftMode === "llm"
+      ? "Notes drafted from what we found."
+      : "Drafting from what we found.";
   return `Shortlist for “${goal}”: ${names}. Grounded in ${via}. ${drafts}`;
 }
 
