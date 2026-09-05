@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,7 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { PIPELINE_STAGES, type Job, type PipelineStage } from "@/lib/types";
+
+const fieldClass =
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-white px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+const areaClass =
+  "min-h-16 w-full rounded-lg border border-input bg-white px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const DEFAULT_URL = "https://luma.com/burningtoken";
 const DEFAULT_GOAL = "shortlist who to thank / partner with";
@@ -26,34 +30,37 @@ export function Desk() {
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/jobs", { cache: "no-store" });
       if (!res.ok) throw new Error("Could not load the desk.");
       const data = (await res.json()) as { jobs: Job[] };
-      setJobs(data.jobs);
+      setJobs(data.jobs ?? []);
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Desk offline.");
     }
-  }
+  }, []);
 
   useEffect(() => {
-    const first = setTimeout(() => void refresh(), 0);
-    const timer = setInterval(() => void refresh(), 1200);
+    const first = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, 1200);
     return () => {
-      clearTimeout(first);
-      clearInterval(timer);
+      window.clearTimeout(first);
+      window.clearInterval(timer);
     };
-  }, []);
+  }, [refresh]);
 
   const selected = useMemo(
     () => jobs.find((job) => job.id === selectedId) ?? jobs[0] ?? null,
     [jobs, selectedId],
   );
 
-  async function assign(event: FormEvent) {
-    event.preventDefault();
+  async function assignJob() {
     setAssigning(true);
     setError(null);
     try {
@@ -122,7 +129,13 @@ export function Desk() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={assign} className="space-y-3">
+              <form
+                className="space-y-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void assignJob();
+                }}
+              >
                 <label className="block space-y-1">
                   <span className="font-mono text-[11px] text-stone-500 uppercase">
                     Job type
@@ -135,7 +148,8 @@ export function Desk() {
                   <span className="font-mono text-[11px] text-stone-500 uppercase">
                     Event URL
                   </span>
-                  <Input
+                  <input
+                    className={fieldClass}
                     value={eventUrl}
                     onChange={(e) => setEventUrl(e.target.value)}
                     placeholder="https://luma.com/burningtoken"
@@ -146,7 +160,8 @@ export function Desk() {
                   <span className="font-mono text-[11px] text-stone-500 uppercase">
                     Goal
                   </span>
-                  <Textarea
+                  <textarea
+                    className={areaClass}
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
                     rows={3}
@@ -156,9 +171,13 @@ export function Desk() {
                 {error ? (
                   <p className="text-sm text-red-700">{error}</p>
                 ) : null}
-                <Button type="submit" disabled={assigning} className="w-full">
+                <button
+                  type="submit"
+                  disabled={assigning}
+                  className={cn(buttonVariants(), "h-9 w-full")}
+                >
                   {assigning ? "Handing to Scout…" : "Assign to Scout"}
-                </Button>
+                </button>
               </form>
             </CardContent>
           </Card>
