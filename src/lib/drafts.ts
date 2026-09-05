@@ -1,4 +1,4 @@
-import { completeJson, llmAvailable } from "./llm";
+import { completeJson, llmAvailable, llmProvider } from "./llm";
 import type { JobResult, ResearchBundle, ShortlistItem } from "./types";
 
 export async function buildResultPack(
@@ -11,25 +11,33 @@ export async function buildResultPack(
 
   let items = templateItems;
   let draftMode: JobResult["draftMode"] = "template";
+  let llmScore: number | null = null;
 
   if (llmAvailable() && templateItems.length > 0) {
     const rewritten = await rewriteWithLlm(goal, research, templateItems);
     if (rewritten) {
-      items = rewritten;
+      items = rewritten.items;
+      llmScore = rewritten.score;
       draftMode = "llm";
     }
   }
 
   const fetchedCount = research.sources.filter((s) => s.fetched).length;
-  const overall = scorePack(items, fetchedCount, research.usedFixture);
+  const overall =
+    llmScore ?? scorePack(items, fetchedCount, research.usedLinkup);
 
   return {
     eventTitle: research.eventTitle,
-    summary: summaryFor(goal, items, research),
+    summary: summaryFor(goal, items, research, draftMode),
     sources: research.sources,
     shortlist: items,
     overallConfidence: overall,
     draftMode,
+    researchMode: research.usedLinkup
+      ? "linkup"
+      : items.length
+        ? "pages"
+        : "empty",
   };
 }
 
@@ -39,7 +47,6 @@ function itemFromHit(
   index: number,
   research: ResearchBundle,
 ): ShortlistItem {
-  const confidence = scoreItem(hit, research);
   return {
     id: `item-${index + 1}-${slug(hit.name)}`,
     name: hit.name,
@@ -49,7 +56,7 @@ function itemFromHit(
     source: hit.source,
     sourceUrl: hit.sourceUrl,
     note: templateNote(hit.name, hit.role, goal, research.eventTitle),
-    confidence,
+    confidence: scoreItem(hit, research),
     approved: false,
   };
 }
@@ -60,20 +67,17 @@ function templateNote(
   goal: string,
   eventTitle: string,
 ): { subject: string; body: string } {
-  const subject = `Follow-up after ${shortTitle(eventTitle)} — ${name}`;
+  const subject = `Coffee after ${shortTitle(eventTitle)}? — ${name}`;
   const body = [
     `Hi ${name} team —`,
     "",
-    `I just came through ${shortTitle(eventTitle)} (SF kickoff at Frontier Tower + the 7-day online build). You showed up as ${role.toLowerCase()}, so you are on a tight shortlist for: ${goal}.`,
+    `I was at ${shortTitle(eventTitle)} this weekend (Frontier Tower + the online week). You showed up as ${role.toLowerCase()}, so you’re on a short list for: ${goal}.`,
     "",
-    "This note is send-ready, not a pitch deck. Two concrete asks:",
-    "1) A thank-you / debrief if you were in the room or sponsored the week.",
-    "2) Whether a small partnership next step is even useful this month (credits, workshop, or intro) — no is a fine answer.",
+    "Would you have 20 minutes for a coffee chat — a thank-you, and whether a small next step is even useful? No is a fine answer.",
     "",
-    "If this should go to someone else on your side, point me there.",
+    "If this should go to someone else, point me there.",
     "",
     "Thanks,",
-    "Scout (via SourceShip)",
   ].join("\n");
   return { subject, body };
 }
@@ -82,44 +86,59 @@ async function rewriteWithLlm(
   goal: string,
   research: ResearchBundle,
   items: ShortlistItem[],
-): Promise<ShortlistItem[] | null> {
+): Promise<{ items: ShortlistItem[]; score: number | null } | null> {
   const prompt = [
     `Goal: ${goal}`,
     `Event: ${research.eventTitle}`,
-    "Entities (do not add new names):",
+    `Draft via: ${llmProvider() ?? "llm"}`,
+    "Entities from live research (do not add names):",
     JSON.stringify(
       items.map((i) => ({
         id: i.id,
         name: i.name,
         role: i.role,
         why: i.why,
+        evidence: research.hits.find((h) => h.name === i.name)?.evidence ?? "",
       })),
     ),
-    "Return JSON: { notes: [{ id, subject, body }] } with one note per id.",
-    "Each body: 90-140 words, send-ready, specific to that org, no invented people.",
+    "Return JSON: { score: number 0-100, notes: [{ id, subject, body, confidence }] }",
+    "Coffee-chat tone, 80-130 words, thank-you first, no invented people.",
+    "score = how well the shortlist is grounded in the provided evidence.",
   ].join("\n");
 
   const raw = await completeJson(prompt);
   if (!raw) return null;
-  const parsed = parseNotes(raw);
+  const parsed = parsePack(raw);
   if (!parsed) return null;
 
-  return items.map((item) => {
-    const note = parsed.find((n) => n.id === item.id);
+  const next = items.map((item) => {
+    const note = parsed.notes.find((n) => n.id === item.id);
     if (!note?.subject || !note?.body) return item;
-    return { ...item, note: { subject: note.subject, body: note.body } };
+    return {
+      ...item,
+      confidence: clampScore(note.confidence ?? item.confidence),
+      note: { subject: note.subject, body: note.body },
+    };
   });
+
+  return {
+    items: next,
+    score: parsed.score == null ? null : clampScore(parsed.score),
+  };
 }
 
-function parseNotes(
-  raw: string,
-): { id: string; subject: string; body: string }[] | null {
+function parsePack(raw: string): {
+  score?: number;
+  notes: { id: string; subject: string; body: string; confidence?: number }[];
+} | null {
   const json = raw.replace(/^```json\s*/i, "").replace(/```$/i, "");
   try {
     const data = JSON.parse(json) as {
-      notes?: { id: string; subject: string; body: string }[];
+      score?: number;
+      notes?: { id: string; subject: string; body: string; confidence?: number }[];
     };
-    return data.notes ?? null;
+    if (!data.notes?.length) return null;
+    return { score: data.score, notes: data.notes };
   } catch {
     return null;
   }
@@ -129,37 +148,40 @@ function scoreItem(
   hit: ResearchBundle["hits"][number],
   research: ResearchBundle,
 ): number {
-  let score = 58;
-  if (hit.evidence) score += 10;
+  let score = 56;
+  if (hit.evidence) score += 12;
+  if (research.usedLinkup) score += 10;
   if (research.sources.some((s) => s.fetched)) score += 8;
-  if (!research.usedFixture) score += 8;
   if (/host|venue|sponsor/i.test(hit.role)) score += 6;
-  return Math.min(92, score);
+  return clampScore(score);
 }
 
 function scorePack(
   items: ShortlistItem[],
   fetchedCount: number,
-  usedFixture: boolean,
+  usedLinkup: boolean,
 ): number {
-  if (items.length === 0) return 22;
-  const avg = items.reduce((sum, item) => sum + item.confidence, 0) / items.length;
+  if (items.length === 0) return 24;
+  const avg =
+    items.reduce((sum, item) => sum + item.confidence, 0) / items.length;
   let score = Math.round(avg);
-  score += Math.min(8, fetchedCount * 3);
-  if (usedFixture) score -= 8;
-  return Math.max(35, Math.min(93, score));
+  score += Math.min(8, fetchedCount * 2);
+  if (usedLinkup) score += 6;
+  return clampScore(score);
 }
 
 function summaryFor(
   goal: string,
   items: ShortlistItem[],
   research: ResearchBundle,
+  draftMode: JobResult["draftMode"],
 ): string {
-  const names = items.map((i) => i.name).join(", ");
-  const grounding = research.usedFixture
-    ? "Live HTML was thin, so Scout grounded names in the verified public event pages (Luma + burningtoken.dev) — no invented people."
-    : "Names are grounded in fetched public pages, not a random contact list.";
-  return `Shortlist for “${goal}”: ${names || "nobody clear yet"}. ${grounding}`;
+  const names = items.map((i) => i.name).join(", ") || "nobody grounded yet";
+  const via = research.usedLinkup
+    ? "LinkUp + public pages"
+    : "public event pages";
+  const drafts = draftMode === "llm" ? `Notes via ${llmProvider()}.` : "Template notes from live entities.";
+  return `Shortlist for “${goal}”: ${names}. Grounded in ${via}. ${drafts}`;
 }
 
 function shortTitle(title: string): string {
@@ -168,4 +190,9 @@ function shortTitle(title: string): string {
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function clampScore(value: number): number {
+  if (!Number.isFinite(value)) return 50;
+  return Math.max(20, Math.min(96, Math.round(value)));
 }

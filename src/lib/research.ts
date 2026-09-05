@@ -1,14 +1,10 @@
-import {
-  BURNING_TOKEN_CATALOG,
-  isDemoEventUrl,
-  matchCatalog,
-} from "./catalog";
+import { isDemoEventUrl, matchCatalog } from "./catalog";
 import { extractTitle, extractUrls, stripHtml } from "./html";
-import { searchLinkup } from "./linkup";
+import { linkupConfigured, searchLinkup } from "./linkup";
 import type { ResearchBundle, ResearchHit, SourceRef } from "./types";
 
 const USER_AGENT =
-  "SourceShip/0.1 (Burning Token demo; follow-up research; +https://burningtoken.dev)";
+  "SourceShip/0.1 (Burning Token follow-up; +https://burningtoken.dev)";
 
 export async function researchEvent(eventUrl: string): Promise<ResearchBundle> {
   const urls = expandUrls(eventUrl);
@@ -24,27 +20,26 @@ export async function researchEvent(eventUrl: string): Promise<ResearchBundle> {
     .map((p) => `SOURCE ${p.url}\n${p.title}\n${p.text}`)
     .join("\n\n");
 
-  const linkup = await searchLinkup(
-    `Burning Token AI hackathon sponsors partners NERDCONF Frontier Tower ${eventUrl}`,
-  );
-  if (linkup) {
-    pageText += `\n\nSOURCE linkup\n${linkup}`;
-    sources.push({
-      title: "LinkUp search",
-      url: "https://api.linkup.so/v1/search",
-      fetched: true,
-    });
+  let usedLinkup = false;
+  if (linkupConfigured()) {
+    const linkup = await searchLinkup(
+      `Burning Token AI hackathon sponsors partners organizers NERDCONF Nebius Render LinkUp ${eventUrl}`,
+    );
+    if (linkup) {
+      usedLinkup = true;
+      pageText += `\n\nSOURCE linkup\n${linkup.text}`;
+      sources.push(
+        ...linkup.sources.map((s) => ({
+          title: s.title,
+          url: s.url,
+          fetched: true,
+        })),
+      );
+    }
   }
 
-  let hits = hitsFromText(pageText);
-  let usedFixture = false;
-
-  if (hits.length === 0 && isDemoEventUrl(eventUrl)) {
-    usedFixture = true;
-    hits = fixtureHits();
-    pageText +=
-      "\n\nFIXTURE: live HTML was thin or blocked; using entities verified from public Burning Token pages (Luma + burningtoken.dev).";
-  }
+  // Only names that appear in live text — never inject a canned list.
+  const hits = hitsFromText(pageText);
 
   const eventTitle =
     pages.find((p) => p.ok && /burning token/i.test(p.title))?.title ||
@@ -56,7 +51,8 @@ export async function researchEvent(eventUrl: string): Promise<ResearchBundle> {
     sources,
     pageText,
     hits,
-    usedFixture,
+    usedLinkup,
+    usedFixture: false,
   };
 }
 
@@ -109,23 +105,11 @@ function hitsFromText(text: string): ResearchHit[] {
       kind: entity.kind,
       role: entity.role,
       why: entity.why,
-      source: evidence ? "page mention" : "catalog match",
+      source: evidence ? "live mention" : "live match",
       sourceUrl: sourceUrlFor(entity.name, text),
       evidence,
     };
   });
-}
-
-function fixtureHits(): ResearchHit[] {
-  return BURNING_TOKEN_CATALOG.map((entity) => ({
-    name: entity.name,
-    kind: entity.kind,
-    role: entity.role,
-    why: entity.why,
-    source: "verified public event pages",
-    sourceUrl: "https://luma.com/burningtoken",
-    evidence: entity.why,
-  }));
 }
 
 function snippetAround(text: string, needle: string): string {

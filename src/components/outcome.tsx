@@ -41,7 +41,7 @@ export function Outcome({ job }: { job: Job }) {
         </div>
       </div>
       <p className="px-6 pt-4 text-xs text-[#8a8176]">
-        {approved}/{result.shortlist.length} approved · nothing is emailed
+          {approved}/{result.shortlist.length} approved · {result.researchMode === "linkup" ? "LinkUp research" : result.researchMode === "pages" ? "live pages" : "no live hits"} · {result.draftMode === "llm" ? "LLM notes" : "template notes"} · nothing is emailed
       </p>
       <div className="grid gap-4 p-6 md:grid-cols-2">
         {result.shortlist.map((item) => (

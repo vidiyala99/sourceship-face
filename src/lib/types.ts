@@ -44,6 +44,7 @@ export type JobResult = {
   shortlist: ShortlistItem[];
   overallConfidence: number;
   draftMode: "llm" | "template";
+  researchMode: "linkup" | "pages" | "empty";
 };
 
 export type ActivityEntry = {
@@ -95,5 +96,6 @@ export type ResearchBundle = {
   sources: SourceRef[];
   pageText: string;
   hits: ResearchHit[];
+  usedLinkup: boolean;
   usedFixture: boolean;
 };
