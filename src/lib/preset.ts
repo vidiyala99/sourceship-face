@@ -5,6 +5,23 @@ export const BURNING_TOKEN = {
   title: "Weekend follow-up · Burning Token",
 };
 
+export const BURNING_TOKEN_STARTER = "Follow up Burning Token";
+
+function normalize(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function isBurningTokenStarter(text: string): boolean {
+  const value = normalize(text);
+  if (!value) return false;
+  return (
+    value === normalize(BURNING_TOKEN_STARTER) ||
+    value === normalize(BURNING_TOKEN.ask) ||
+    value === normalize(BURNING_TOKEN.goal) ||
+    value === normalize(BURNING_TOKEN.title)
+  );
+}
+
 export function resolveAssignment(input: {
   preset?: string;
   ask?: string;
@@ -20,33 +37,42 @@ export function resolveAssignment(input: {
   const eventUrl = (input.eventUrl ?? "").trim();
   const goal = (input.goal ?? "").trim();
   const preset = (input.preset ?? "").trim();
+  const useCase = goal || ask;
 
   const usePreset =
-    preset === "burningtoken" ||
-    (!eventUrl && (!ask || /weekend|burning|coffee|thank|partner|follow/i.test(ask)));
+    preset === "burningtoken" || isBurningTokenStarter(useCase);
 
   if (usePreset) {
     return {
       eventUrl: eventUrl || BURNING_TOKEN.eventUrl,
-      goal: goal || BURNING_TOKEN.goal,
-      ask: ask || BURNING_TOKEN.ask,
+      goal: goal && !isBurningTokenStarter(goal) ? goal : BURNING_TOKEN.goal,
+      ask: ask && !isBurningTokenStarter(ask) ? ask : BURNING_TOKEN.ask,
       title: BURNING_TOKEN.title,
     };
   }
 
-  if (!eventUrl) {
+  if (useCase) {
     return {
-      eventUrl: BURNING_TOKEN.eventUrl,
-      goal: goal || BURNING_TOKEN.goal,
-      ask: ask || BURNING_TOKEN.ask,
-      title: BURNING_TOKEN.title,
+      eventUrl: eventUrl || BURNING_TOKEN.eventUrl,
+      goal: useCase,
+      ask: useCase,
+      title: useCase.slice(0, 72),
+    };
+  }
+
+  if (eventUrl) {
+    return {
+      eventUrl,
+      goal: BURNING_TOKEN.goal,
+      ask: `Follow up ${eventUrl}`,
+      title: "Event follow-up",
     };
   }
 
   return {
-    eventUrl,
-    goal: goal || ask || BURNING_TOKEN.goal,
-    ask: ask || `Follow up ${eventUrl}`,
-    title: ask ? ask.slice(0, 64) : "Event follow-up",
+    eventUrl: BURNING_TOKEN.eventUrl,
+    goal: BURNING_TOKEN.goal,
+    ask: BURNING_TOKEN.ask,
+    title: BURNING_TOKEN.title,
   };
 }

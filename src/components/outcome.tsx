@@ -7,20 +7,20 @@ export function Outcome({ job }: { job: Job }) {
   const approved = result.shortlist.length - pending;
 
   return (
-    <section className="mt-10 overflow-hidden rounded-[1.6rem] bg-[#f4efe6] text-[#1c1712]">
-      <div className="flex flex-col gap-5 border-b border-[#1c1712]/10 px-6 py-6 md:flex-row md:items-end md:justify-between">
-        <div>
+    <section className="mt-8 overflow-hidden rounded-[1.25rem] bg-[#f4efe6] text-[#1c1712] sm:mt-10 sm:rounded-[1.6rem]">
+      <div className="flex flex-col gap-4 border-b border-[#1c1712]/10 px-4 py-5 sm:gap-5 sm:px-6 sm:py-6 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
           <p className="text-[11px] tracking-[0.22em] text-[#a85b2b] uppercase">
             Outcome
           </p>
-          <h2 className="font-serif mt-1 text-3xl tracking-tight">
-            Who to thank this week
+          <h2 className="font-serif mt-1 text-2xl tracking-tight sm:text-3xl">
+            {job.title}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#5c544a]">
             {result.summary}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-2xl bg-white px-4 py-2 text-center shadow-sm">
             <p className="text-[10px] tracking-[0.16em] text-[#8a8176] uppercase">
               Confidence
@@ -33,17 +33,17 @@ export function Outcome({ job }: { job: Job }) {
             <button
               type="submit"
               disabled={pending === 0}
-              className="h-12 rounded-full bg-[#1c1712] px-5 text-sm font-medium text-[#f4efe6] disabled:opacity-40"
+              className="h-11 rounded-full bg-[#1c1712] px-5 text-sm font-medium text-[#f4efe6] disabled:opacity-40 sm:h-12"
             >
               Approve remaining ({pending})
             </button>
           </form>
         </div>
       </div>
-      <p className="px-6 pt-4 text-xs text-[#8a8176]">
+      <p className="px-4 pt-4 text-xs text-[#8a8176] sm:px-6">
           {approved}/{result.shortlist.length} approved · {result.researchMode === "linkup" ? "LinkUp research" : result.researchMode === "pages" ? "live pages" : "no live hits"} · {result.draftMode === "llm" ? "LLM notes" : "template notes"} · nothing is emailed
       </p>
-      <div className="grid gap-4 p-6 md:grid-cols-2">
+      <div className="grid gap-3 p-4 sm:gap-4 sm:p-6 md:grid-cols-2">
         {result.shortlist.map((item) => (
           <article
             key={item.id}
