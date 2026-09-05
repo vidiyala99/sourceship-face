@@ -1,8 +1,3 @@
-"use client";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -10,90 +5,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { PIPELINE_STAGES, type Job, type PipelineStage } from "@/lib/types";
-
-const fieldClass =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-white px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-const areaClass =
-  "min-h-16 w-full rounded-lg border border-input bg-white px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const DEFAULT_URL = "https://luma.com/burningtoken";
 const DEFAULT_GOAL = "shortlist who to thank / partner with";
 
-export function Desk() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [eventUrl, setEventUrl] = useState(DEFAULT_URL);
-  const [goal, setGoal] = useState(DEFAULT_GOAL);
-  const [assigning, setAssigning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+const fieldClass =
+  "h-8 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-2.5 py-1 text-sm outline-none";
+const areaClass =
+  "min-h-16 w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm outline-none";
+const btnClass =
+  "inline-flex h-9 items-center justify-center rounded-lg bg-stone-900 px-3 text-sm font-medium text-stone-50 disabled:opacity-50";
+const btnGhost =
+  "inline-flex h-7 items-center justify-center rounded-md border border-stone-300 bg-white px-2.5 text-xs font-medium text-stone-900";
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/jobs", { cache: "no-store" });
-      if (!res.ok) throw new Error("Could not load the desk.");
-      const data = (await res.json()) as { jobs: Job[] };
-      setJobs(data.jobs ?? []);
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Desk offline.");
-    }
-  }, []);
-
-  useEffect(() => {
-    const first = window.setTimeout(() => {
-      void refresh();
-    }, 0);
-    const timer = window.setInterval(() => {
-      void refresh();
-    }, 1200);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(timer);
-    };
-  }, [refresh]);
-
-  const selected = useMemo(
-    () => jobs.find((job) => job.id === selectedId) ?? jobs[0] ?? null,
-    [jobs, selectedId],
-  );
-
-  async function assignJob() {
-    setAssigning(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventUrl, goal }),
-      });
-      const data = (await res.json()) as { job?: Job; error?: string };
-      if (!res.ok || !data.job) throw new Error(data.error || "Assign failed.");
-      setSelectedId(data.job.id);
-      setJobs((prev) => [data.job!, ...prev.filter((j) => j.id !== data.job!.id)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Assign failed.");
-    } finally {
-      setAssigning(false);
-    }
-  }
-
-  async function approve(itemIds: string[] | "all") {
-    if (!selected) return;
-    const res = await fetch(`/api/jobs/${selected.id}/approve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(itemIds === "all" ? { all: true } : { itemIds }),
-    });
-    const data = (await res.json()) as { job?: Job; error?: string };
-    if (data.job) {
-      setJobs((prev) => prev.map((job) => (job.id === data.job!.id ? data.job! : job)));
-    }
-  }
-
-  const pendingCount = selected?.result?.shortlist.filter((i) => !i.approved).length ?? 0;
+export function Desk({
+  jobs,
+  selectedId,
+  error,
+}: {
+  jobs: Job[];
+  selectedId: string | null;
+  error: string | null;
+}) {
+  const selected = jobs.find((job) => job.id === selectedId) ?? jobs[0] ?? null;
+  const pendingCount =
+    selected?.result?.shortlist.filter((item) => !item.approved).length ?? 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 px-4 py-6 md:px-6">
@@ -129,13 +66,7 @@ export function Desk() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form
-                className="space-y-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void assignJob();
-                }}
-              >
+              <form action="/api/jobs/form" method="post" className="space-y-3">
                 <label className="block space-y-1">
                   <span className="font-mono text-[11px] text-stone-500 uppercase">
                     Job type
@@ -150,8 +81,8 @@ export function Desk() {
                   </span>
                   <input
                     className={fieldClass}
-                    value={eventUrl}
-                    onChange={(e) => setEventUrl(e.target.value)}
+                    name="eventUrl"
+                    defaultValue={DEFAULT_URL}
                     placeholder="https://luma.com/burningtoken"
                     required
                   />
@@ -162,21 +93,15 @@ export function Desk() {
                   </span>
                   <textarea
                     className={areaClass}
-                    value={goal}
-                    onChange={(e) => setGoal(e.target.value)}
+                    name="goal"
+                    defaultValue={DEFAULT_GOAL}
                     rows={3}
                     required
                   />
                 </label>
-                {error ? (
-                  <p className="text-sm text-red-700">{error}</p>
-                ) : null}
-                <button
-                  type="submit"
-                  disabled={assigning}
-                  className={cn(buttonVariants(), "h-9 w-full")}
-                >
-                  {assigning ? "Handing to Scout…" : "Assign to Scout"}
+                {error ? <p className="text-sm text-red-700">{error}</p> : null}
+                <button type="submit" className={`${btnClass} w-full`}>
+                  Assign to Scout
                 </button>
               </form>
             </CardContent>
@@ -190,19 +115,11 @@ export function Desk() {
               <li>Drafting — notes from those entities only.</li>
               <li>Ready — pack sits here until you approve.</li>
             </ol>
-            <p className="mt-3 text-xs">
-              Approve is UI-only. Nothing is emailed.
-            </p>
+            <p className="mt-3 text-xs">Approve is UI-only. Nothing is emailed.</p>
           </div>
         </aside>
 
         <section className="space-y-4">
-          {loadError ? (
-            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {loadError}
-            </p>
-          ) : null}
-
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {PIPELINE_STAGES.map((stage) => (
               <BoardColumn
@@ -210,12 +127,10 @@ export function Desk() {
                 stage={stage}
                 jobs={jobs.filter((job) => job.stage === stage)}
                 selectedId={selected?.id}
-                onSelect={setSelectedId}
               />
             ))}
           </div>
-
-          <ResultPack job={selected} pendingCount={pendingCount} onApprove={approve} />
+          <ResultPack job={selected} pendingCount={pendingCount} />
         </section>
       </div>
     </div>
@@ -226,12 +141,10 @@ function BoardColumn({
   stage,
   jobs,
   selectedId,
-  onSelect,
 }: {
   stage: PipelineStage;
   jobs: Job[];
   selectedId?: string;
-  onSelect: (id: string) => void;
 }) {
   return (
     <div className="min-h-48 rounded-xl border border-stone-300/80 bg-stone-200/40 p-2">
@@ -246,30 +159,35 @@ function BoardColumn({
           <p className="px-1 py-6 text-center text-xs text-stone-500">Empty</p>
         ) : (
           jobs.map((job) => (
-            <button
+            <a
               key={job.id}
-              type="button"
-              onClick={() => onSelect(job.id)}
-              className={`w-full rounded-lg border p-2.5 text-left transition ${
+              href={`/?job=${job.id}`}
+              className={`block w-full rounded-lg border p-2.5 text-left ${
                 selectedId === job.id
                   ? "border-stone-900 bg-white shadow-sm"
-                  : "border-stone-300 bg-[#fffdf7] hover:border-stone-500"
+                  : "border-stone-300 bg-[#fffdf7]"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-stone-900">{job.title}</p>
                 {job.retrying ? (
-                  <Badge variant="destructive">Retrying</Badge>
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] text-red-800">
+                    Retrying
+                  </span>
                 ) : job.failed ? (
-                  <Badge variant="destructive">Failed</Badge>
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] text-red-800">
+                    Failed
+                  </span>
                 ) : job.stage === "ready" ? (
-                  <Badge>Ready</Badge>
+                  <span className="rounded-full bg-stone-900 px-2 py-0.5 text-[11px] text-white">
+                    Ready
+                  </span>
                 ) : null}
               </div>
               <p className="mt-1 line-clamp-2 text-xs text-stone-600">
                 {job.statusNote}
               </p>
-            </button>
+            </a>
           ))
         )}
       </div>
@@ -280,11 +198,9 @@ function BoardColumn({
 function ResultPack({
   job,
   pendingCount,
-  onApprove,
 }: {
   job: Job | null;
   pendingCount: number;
-  onApprove: (itemIds: string[] | "all") => void;
 }) {
   if (!job) {
     return (
@@ -333,7 +249,7 @@ function ResultPack({
   }
 
   const { result } = job;
-  const approved = result.shortlist.filter((i) => i.approved).length;
+  const approved = result.shortlist.filter((item) => item.approved).length;
 
   return (
     <Card className="bg-[#fffdf7]">
@@ -354,13 +270,13 @@ function ResultPack({
                 {result.overallConfidence}
               </div>
             </div>
-            <Button
-              type="button"
-              disabled={pendingCount === 0}
-              onClick={() => onApprove("all")}
-            >
-              Approve remaining ({pendingCount})
-            </Button>
+            <form action="/api/jobs/form/approve" method="post">
+              <input type="hidden" name="jobId" value={job.id} />
+              <input type="hidden" name="all" value="1" />
+              <button type="submit" className={btnClass} disabled={pendingCount === 0}>
+                Approve remaining ({pendingCount})
+              </button>
+            </form>
           </div>
         </div>
         <p className="mt-2 text-xs text-stone-500">
@@ -391,9 +307,9 @@ function ResultPack({
                       {item.role} · {item.kind} · why: {item.why}
                     </p>
                   </div>
-                  <Badge variant={item.approved ? "secondary" : "outline"}>
+                  <span className="rounded-full border border-stone-300 px-2 py-0.5 text-[11px]">
                     {item.approved ? "Approved" : `c${item.confidence}`}
-                  </Badge>
+                  </span>
                 </div>
                 <div className="mt-3 rounded-md bg-stone-50 p-2">
                   <p className="text-xs font-medium text-stone-800">
@@ -408,15 +324,17 @@ function ResultPack({
                     Source: {item.source}
                     {item.sourceUrl ? ` · ${item.sourceUrl}` : ""}
                   </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={item.approved ? "secondary" : "default"}
-                    disabled={item.approved}
-                    onClick={() => onApprove([item.id])}
-                  >
-                    {item.approved ? "Approved" : "Approve"}
-                  </Button>
+                  <form action="/api/jobs/form/approve" method="post">
+                    <input type="hidden" name="jobId" value={job.id} />
+                    <input type="hidden" name="itemId" value={item.id} />
+                    <button
+                      type="submit"
+                      className={btnGhost}
+                      disabled={item.approved}
+                    >
+                      {item.approved ? "Approved" : "Approve"}
+                    </button>
+                  </form>
                 </div>
               </article>
             ))}
