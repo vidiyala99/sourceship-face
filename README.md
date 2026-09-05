@@ -25,7 +25,7 @@ Set these in `.env.local` or on Render. The crew uses them as soon as they are p
 | `NEBIUS_BASE_URL` | Tess | Default `https://api.tokenfactory.nebius.com/v1` |
 | `OPENAI_API_KEY` + `OPENAI_BASE_URL` | Tess | Alternate if Nebius is exposed as OpenAI-compat. |
 
-Without keys, Reed still fetches public event HTML and Tess writes template notes from those live entities. The header shows **LinkUp live / waiting** and **Nebius live / waiting**.
+Without keys, Reed still fetches public event HTML and Tess writes notes from those live entities. The header says **Using public pages** / **Drafting from what we found** — never credential status.
 
 `GET /api/health` reports which integrations are configured (no secrets).
 

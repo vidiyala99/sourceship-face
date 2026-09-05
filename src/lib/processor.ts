@@ -1,7 +1,7 @@
 import { buildResultPack } from "./drafts";
 import { sponsorStatus } from "./env";
 import { linkupConfigured } from "./linkup";
-import { llmAvailable, llmProvider } from "./llm";
+import { llmAvailable } from "./llm";
 import { researchEvent } from "./research";
 import { getJob, isLocked, listJobs, patchJob, tryLock, unlock } from "./store";
 import type { CrewAgent, CrewMessage, Job } from "./types";
@@ -45,15 +45,15 @@ async function runJob(jobId: string): Promise<void> {
       await say(
         jobId,
         "mira",
-        `Got it: ${job.ask}. Reed researches live sources. Tess drafts only from those names.`,
+        "Got it. Reed researches live sources. Tess drafts only from those names.",
         { stage: "queued" },
       );
       await say(
         jobId,
         "mira",
         sponsors.linkup
-          ? "LinkUp is on. Reed, use it — no invented people."
-          : "LinkUp key is not set yet. Reed, use public pages only.",
+          ? "Reed, use live sources — no invented people."
+          : "Using public pages. Reed, no invented people.",
         { stage: "researching" },
       );
     }
@@ -67,7 +67,7 @@ async function runJob(jobId: string): Promise<void> {
         jobId,
         "reed",
         linkupConfigured()
-          ? `Searching LinkUp and opening ${hostname(current.eventUrl)}.`
+          ? `Searching live sources and opening ${hostname(current.eventUrl)}.`
           : `Opening ${hostname(current.eventUrl)} and related public pages.`,
         { stage: "researching" },
       );
@@ -94,7 +94,7 @@ async function runJob(jobId: string): Promise<void> {
       jobId,
       "reed",
       research.usedLinkup
-        ? `LinkUp + pages landed on: ${names}.`
+        ? `Live sources landed on: ${names}.`
         : `Public pages landed on: ${names}.`,
       { stage: "researching" },
     );
@@ -111,8 +111,8 @@ async function runJob(jobId: string): Promise<void> {
       jobId,
       "tess",
       llmAvailable()
-        ? `Writing notes and a score via ${llmProvider()}.`
-        : "No Nebius/OpenAI key yet. Writing notes from the live entities.",
+        ? "Writing notes and a score from what we found."
+        : "Drafting from what we found.",
       { stage: "drafting" },
     );
 

@@ -1,25 +1,36 @@
 import Link from "next/link";
+import { ApproveDone } from "@/components/approve-done";
 import { Shell } from "@/components/shell";
 import { StartPanel } from "@/components/start-panel";
-import { publicJobs } from "@/lib/jobs";
+import { publicJob, publicJobs } from "@/lib/jobs";
 import { kickStaleJobs } from "@/lib/processor";
 
 export const dynamic = "force-dynamic";
 
-export default function AppHome() {
+export default async function AppHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ approved?: string; job?: string }>;
+}) {
   kickStaleJobs();
+  const { approved, job: jobId } = await searchParams;
+  const approvedCount = Number(approved);
+  const packJob = jobId ? publicJob(jobId) : undefined;
   const jobs = publicJobs();
   const inFlight = jobs.some((job) => job.stage !== "ready" && !job.failed);
 
   return (
     <>
-      {inFlight ? (
+      {inFlight && !(approvedCount > 0) ? (
         <meta httpEquiv="refresh" content="3;url=/app" />
       ) : null}
       <Shell eyebrow="Ready when you are">
+        {approvedCount > 0 ? (
+          <ApproveDone count={approvedCount} jobId={packJob?.id || jobId} />
+        ) : null}
         <StartPanel />
         {jobs.length > 0 ? (
-          <section className="mx-auto mt-16 max-w-2xl">
+          <section id="recent" className="mx-auto mt-16 max-w-2xl">
             <p className="text-[11px] tracking-[0.22em] text-[#e8a36a] uppercase">
               Recent
             </p>

@@ -67,7 +67,7 @@ export function Landing({ error }: { error?: string | null }) {
                 Nothing invented.
               </Bubble>
               <Bubble who="Tess" role="Drafts" tone="tess">
-                Coffee-chat notes ready for you to approve.
+                Notes you approve. Thank-you first. We never send.
               </Bubble>
             </div>
           </div>

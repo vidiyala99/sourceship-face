@@ -308,7 +308,9 @@ function ResultPack({
                     </p>
                   </div>
                   <span className="rounded-full border border-stone-300 px-2 py-0.5 text-[11px]">
-                    {item.approved ? "Approved" : `c${item.confidence}`}
+                    {item.approved
+                      ? "Approved"
+                      : `${item.confidence}% confidence`}
                   </span>
                 </div>
                 <div className="mt-3 rounded-md bg-stone-50 p-2">
