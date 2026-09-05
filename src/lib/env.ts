@@ -48,7 +48,7 @@ export function resolveLlm(): {
       model:
         process.env.NEBIUS_MODEL ||
         process.env.OPENAI_MODEL ||
-        "meta-llama/Meta-Llama-3.1-8B-Instruct-fast",
+        "meta-llama/Meta-Llama-3.1-8B-Instruct",
     };
   }
 
@@ -60,7 +60,7 @@ export function resolveLlm(): {
       model:
         process.env.NEBIUS_MODEL ||
         process.env.OPENAI_MODEL ||
-        "meta-llama/Meta-Llama-3.1-8B-Instruct-fast",
+        "meta-llama/Meta-Llama-3.1-8B-Instruct",
     };
   }
 

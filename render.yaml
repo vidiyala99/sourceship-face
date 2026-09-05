@@ -18,7 +18,7 @@ services:
       - key: NEBIUS_BASE_URL
         value: https://api.tokenfactory.nebius.com/v1
       - key: NEBIUS_MODEL
-        value: meta-llama/Meta-Llama-3.1-8B-Instruct-fast
+        value: meta-llama/Meta-Llama-3.1-8B-Instruct
       - key: LINKUP_API_KEY
         sync: false
       - key: NEBIUS_API_KEY
