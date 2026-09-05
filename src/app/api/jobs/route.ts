@@ -11,9 +11,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let body: { eventUrl?: string; goal?: string };
+  let body: { eventUrl?: string; goal?: string; ask?: string; preset?: string };
   try {
-    body = (await request.json()) as { eventUrl?: string; goal?: string };
+    body = (await request.json()) as {
+      eventUrl?: string;
+      goal?: string;
+      ask?: string;
+      preset?: string;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -22,6 +27,8 @@ export async function POST(request: Request) {
     const job = createFollowUpJob({
       eventUrl: body.eventUrl ?? "",
       goal: body.goal ?? "",
+      ask: body.ask ?? "",
+      preset: body.preset ?? "",
     });
     return NextResponse.json({ job }, { status: 201 });
   } catch (error) {
