@@ -33,6 +33,8 @@ function hydrate(store: Store): void {
     const jobs = JSON.parse(readFileSync(STORE_PATH, "utf8")) as Job[];
     for (const job of jobs) {
       job.retrying = false;
+      job.crew = job.crew ?? [];
+      job.ask = job.ask ?? job.title;
       store.jobs.set(job.id, job);
     }
   } catch {

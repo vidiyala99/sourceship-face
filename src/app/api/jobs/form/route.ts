@@ -1,4 +1,4 @@
-import { redirectHome } from "@/lib/http";
+import { redirectTo } from "@/lib/http";
 import { createFollowUpJob } from "@/lib/jobs";
 
 export const runtime = "nodejs";
@@ -6,15 +6,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const form = await request.formData();
-  const eventUrl = String(form.get("eventUrl") ?? "");
-  const goal = String(form.get("goal") ?? "");
-
   try {
-    const job = createFollowUpJob({ eventUrl, goal });
-    return redirectHome(request, { job: job.id });
+    const job = createFollowUpJob({
+      preset: String(form.get("preset") ?? "burningtoken"),
+      ask: String(form.get("ask") ?? ""),
+      eventUrl: String(form.get("eventUrl") ?? ""),
+      goal: String(form.get("goal") ?? ""),
+    });
+    return redirectTo(request, `/run/${job.id}`);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Could not assign job";
-    return redirectHome(request, { error: message });
+      error instanceof Error ? error.message : "Could not start the crew";
+    return redirectTo(request, "/", { error: message });
   }
 }

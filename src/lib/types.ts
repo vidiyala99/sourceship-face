@@ -11,6 +11,8 @@ export type EntityKind = "org" | "person" | "venue";
 
 export type JobType = "follow_up_event";
 
+export type CrewAgent = "mira" | "reed" | "tess";
+
 export type SourceRef = {
   title: string;
   url: string;
@@ -49,10 +51,18 @@ export type ActivityEntry = {
   message: string;
 };
 
+export type CrewMessage = {
+  id: string;
+  at: string;
+  agent: CrewAgent;
+  text: string;
+};
+
 export type Job = {
   id: string;
   type: JobType;
   title: string;
+  ask: string;
   eventUrl: string;
   goal: string;
   stage: PipelineStage;
@@ -63,6 +73,7 @@ export type Job = {
   updatedAt: string;
   retryCount: number;
   activity: ActivityEntry[];
+  crew: CrewMessage[];
   result?: JobResult;
   error?: string;
 };
