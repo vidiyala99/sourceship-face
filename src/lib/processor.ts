@@ -42,7 +42,7 @@ async function runJob(jobId: string): Promise<void> {
     if (!job || job.failed || job.stage === "ready") return;
 
     if (job.stage === "queued") {
-      await sleep(700);
+      await sleep(1100);
       patchJob(jobId, {
         stage: "researching",
         retrying: false,
@@ -54,8 +54,11 @@ async function runJob(jobId: string): Promise<void> {
     if (!current || current.failed) return;
 
     let research;
+    const researchStarted = Date.now();
     try {
       research = await researchEvent(current.eventUrl);
+      const dwell = 1800 - (Date.now() - researchStarted);
+      if (dwell > 0) await sleep(dwell);
     } catch {
       const retried = await retryOnce(jobId, "researching", "Research fetch failed once.");
       if (!retried) return;
@@ -76,7 +79,7 @@ async function runJob(jobId: string): Promise<void> {
         : `Found ${research.hits.length} grounded entities: ${hitNames}.`,
     });
 
-    await sleep(600);
+    await sleep(1400);
 
     try {
       const pack = await buildResultPack(current.goal, research);
