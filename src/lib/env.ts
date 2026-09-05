@@ -1,4 +1,5 @@
 import { linkupConfigured } from "./linkup";
+import { readSecret } from "./secret";
 
 export type SponsorStatus = {
   linkup: boolean;
@@ -23,10 +24,11 @@ export function resolveLlm(): {
   baseUrl: string;
   model: string;
 } | null {
-  const nebiusKey =
-    process.env.NEBIUS_API_KEY ||
-    process.env.NEBIUS_TOKEN ||
-    process.env.NEBIUS_API_TOKEN;
+  const nebiusKey = readSecret(
+    ["NEBIUS_API_KEY", "NEBIUS_TOKEN", "NEBIUS_API_TOKEN"],
+    "/workspace/secrets/NEBIUS_API_KEY",
+    "NEBIUS_API_KEY_FILE",
+  );
   const openaiKey = process.env.OPENAI_API_KEY;
   const baseHint = (
     process.env.NEBIUS_BASE_URL ||

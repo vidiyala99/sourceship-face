@@ -1,22 +1,17 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readSecret } from "./secret";
 
 export type LinkupResult = {
   text: string;
   sources: { title: string; url: string; snippet: string }[];
 };
 
-/** Env first (`LINKUP_API_KEY`), then optional file (`LINKUP_API_KEY_FILE` or /workspace/secrets/LINKUP_API_KEY). */
+/** Env first (`LINKUP_API_KEY`), then `/workspace/secrets/LINKUP_API_KEY`. */
 export function linkupKey(): string | undefined {
-  const fromEnv = process.env.LINKUP_API_KEY?.trim();
-  if (fromEnv) return fromEnv;
-  const file =
-    process.env.LINKUP_API_KEY_FILE?.trim() || "/workspace/secrets/LINKUP_API_KEY";
-  try {
-    if (!existsSync(file)) return undefined;
-    return readFileSync(file, "utf8").trim() || undefined;
-  } catch {
-    return undefined;
-  }
+  return readSecret(
+    ["LINKUP_API_KEY"],
+    "/workspace/secrets/LINKUP_API_KEY",
+    "LINKUP_API_KEY_FILE",
+  );
 }
 
 export function linkupConfigured(): boolean {

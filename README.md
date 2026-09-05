@@ -36,15 +36,30 @@ Without keys, Reed still fetches public event HTML and Tess writes template note
 3. Watch Mira / Reed / Tess on live research and drafts
 4. Outcome pack → **Approve remaining** (not emailed)
 
-## Deploy on Render
+## Deploy on Render (public demo)
 
-1. New Web Service from this repo (`render.yaml` included)
-2. Build: `npm install && npm run build`
-3. Start: `npm start` (long-lived Node — in-process worker + one retry per failed stage)
-4. Add `LINKUP_API_KEY` and `NEBIUS_API_KEY` (or `OPENAI_*`)
-5. Health check: `/api/health`
+`render.yaml` is in the repo. The worker is in-process (`npm start` = long-lived Node). `PORT` comes from Render.
 
-Vercel works for the UI but serverless isolates reset the worker. Prefer Render for the live crew.
+**A. Blueprint (fastest)**
+1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**
+2. Connect this Git repo (branch `main`)
+3. Apply `render.yaml` (service `sourceship`)
+4. In the service → **Environment**, paste:
+   - `LINKUP_API_KEY` = value from `/workspace/secrets/LINKUP_API_KEY`
+   - `NEBIUS_API_KEY` = value from `/workspace/secrets/NEBIUS_API_KEY`
+5. Deploy. Confirm `https://<service>.onrender.com/api/health` is  
+   `{ "ok": true, "linkup": true, "llm": true, "llmProvider": "nebius" }`
+6. Public app: `https://<service>.onrender.com`
+
+**B. Manual Web Service**
+1. **New** → **Web Service** → this repo
+2. Runtime: Node · Build: `npm install && npm run build` · Start: `npm start`
+3. Health check: `/api/health`
+4. Same env vars as above (`NEBIUS_BASE_URL` defaults in `render.yaml`)
+
+Do not commit secrets. `.env.local` and `/workspace/secrets/*` are gitignored.
+
+Vercel is UI-only; serverless resets the worker. Use Render for the live crew.
 
 ## Out of scope
 

@@ -1,25 +1,25 @@
+# Blueprint: https://dashboard.render.com → New → Blueprint
+# After first deploy, paste LINKUP_API_KEY and NEBIUS_API_KEY in the dashboard.
+# Do not put secrets in this file.
 services:
   - type: web
     name: sourceship
     runtime: node
     plan: starter
+    region: oregon
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
-      - key: LINKUP_API_KEY
-        sync: false
-      - key: NEBIUS_API_KEY
-        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: JOB_STORE_PATH
+        value: /tmp/sourceship-jobs.json
       - key: NEBIUS_BASE_URL
         value: https://api.studio.nebius.com/v1
       - key: NEBIUS_MODEL
         value: meta-llama/Meta-Llama-3.1-8B-Instruct-fast
-      - key: OPENAI_API_KEY
+      - key: LINKUP_API_KEY
         sync: false
-      - key: OPENAI_BASE_URL
+      - key: NEBIUS_API_KEY
         sync: false
-      - key: JOB_STORE_PATH
-        value: /tmp/sourceship-jobs.json
-      - key: NODE_ENV
-        value: production
